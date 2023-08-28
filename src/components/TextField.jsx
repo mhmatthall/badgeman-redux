@@ -14,6 +14,7 @@ export default function TextField({ label, placeholderText, supportingText }) {
             <input
               type="text"
               id="code"
+              name="code"
               autoFocus
               required
               maxLength={4}
