@@ -1,7 +1,17 @@
-import { verify } from "@/lib/secret";
+import { verify } from "@/lib/auth/secret";
+import { withSessionRoute } from "@/lib/auth/withSession";
+import { findBadgebyId } from "@/lib/db/badgesCrud";
+import { withBadges } from "@/lib/db/withBadges";
 
-export default async function handler(req, res) {
+export default withSessionRoute(withBadges(handler));
+
+async function handler(req, res, badges) {
   const { body } = req;
+
+  // Guard: badges collection not found
+  if (!badges) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
 
   // Guard: invalid method
   if (req.method !== "POST") {
@@ -24,8 +34,7 @@ export default async function handler(req, res) {
   }
 
   // Guard: invalid badge ID (not found in DB)
-  // TODO: replace this with a real database query
-  if (body.badgeId !== "1234") {
+  if (!(await findBadgebyId(badges, body.badgeId))) {
     return res
       .status(404)
       .json({ message: "Uh-oh, badge not found. Speak to Matt for help!" });
@@ -38,10 +47,15 @@ export default async function handler(req, res) {
       .json({ message: "That's not the right code. Please try again." });
   }
 
+  // Successful request
   console.log(
     `Successful ${req.method} at /login -- id: ${body.badgeId} code: ${body.verificationCode}`
   );
 
-  // Successful request
+  // Store badge ID in session cookie
+  req.session.badgeId = body.badgeId;
+  await req.session.save();
+
+  // Return success
   return res.status(200).json({ message: "Login successful" });
 }
