@@ -13,7 +13,7 @@ export async function generateBlankBadge(badgeId) {
   const ctx = cv.getContext("2d");
 
   // Generate secret to display
-  const secret = generate(badgeId);
+  const secret = generate(badgeId.toString());
 
   // Grab base blank badge template image
   const baseImg = await loadImage(
