@@ -22,6 +22,29 @@ export async function updateBadgebyId(collection, badgeId, badgeData) {
   );
 }
 
+export async function resetBadgeById(collection, badgeId) {
+  const image = await generateBlankBadge(badgeId);
+  const badgeData = {
+    name: "",
+    pronouns: "",
+    affiliation: "",
+    message: "",
+    image: image,
+  }
+
+  return collection.updateOne(
+    { currentId: parseInt(badgeId) },
+    {
+      $set: {
+        lastUpdate: new Date(),
+        userData: {
+          ...badgeData,
+        },
+      },
+    }
+  );
+}
+
 export async function createBadgeByMac(collection, macAddress) {
   const badgeId = (await collection.countDocuments()) + 1;
   const image = await generateBlankBadge(badgeId);
