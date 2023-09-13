@@ -2,15 +2,19 @@
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import FormWrapper from "@/components/FormWrapper";
+import Layout from "@/components/Layout";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import TextField from "@/components/TextField";
-import style from "@/styles/Default.module.scss";
 import axios from "axios";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { Controller, useForm } from "react-hook-form";
 
-export default function Home() {
+Page.getLayout = (page) => {
+  return <Layout>{page}</Layout>;
+};
+
+export default function Page() {
   const router = useRouter();
   const {
     control,
@@ -33,13 +37,13 @@ export default function Home() {
     await axios
       .post("/api/login", data)
       .then((res) => {
-        // Redirect to the dashboard page if the login was successful
+        // Redirect to the editor if login was successful
         if (res.status === 200) {
           router.push("/editor");
         }
       })
       .catch((err) => {
-        // Show an error message on the form if the login was unsuccessful
+        // Show an error message on the form if login was unsuccessful
         setError("root.serverError", {
           type: err.response.status,
           message: err.response.data.message,
@@ -48,11 +52,11 @@ export default function Home() {
   };
 
   return (
-    <div className={style.root}>
+    <>
       <Head>
         <title>badgeman</title>
       </Head>
-      <main className={style.main}>
+      <main>
         <Card
           headline="Welcome!"
           subhead="Let's set up your digital name badge."
@@ -113,6 +117,6 @@ export default function Home() {
           </FormWrapper>
         </Card>
       </main>
-    </div>
+    </>
   );
 }
