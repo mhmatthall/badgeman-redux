@@ -19,19 +19,18 @@ async function handler(req, res, badges) {
   }
 
   // Successful receipt
-  console.log(
-    `Successful ${req.method} at /badges/by-mac/${mac} -- body: ${body}`
-  );
+  console.log(`${req.method} at /badges/by-mac/${mac}`);
 
   // GET: Get badge by MAC address
   if (req.method === "GET") {
-    const badge = await findBadgebyMac(badges, mac);
-    if (!badge) {
+    const result = await findBadgebyMac(badges, mac);
+
+    if (result.length === 0) {
       return res
         .status(404)
         .json({ message: "Uh-oh, badge not found. Speak to Matt for help!" });
     } else {
-      return res.status(200).json(badge[0]);
+      return res.status(200).json(result[0]);
     }
   }
 
@@ -41,8 +40,11 @@ async function handler(req, res, badges) {
 
     const result = await createBadgeByMac(badges, mac);
 
-    console.log("RESULT:", result);
-    return res.status(201).json("Badge created successfully");
+    if (!result.insertedId) {
+      return res.status(500).json({ message: "Internal server error" });
+    } else {
+      return res.status(201).json("Badge created successfully");
+    }
   }
 
   // PUT: N/A

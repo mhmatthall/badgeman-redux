@@ -20,19 +20,17 @@ async function handler(req, res, badges) {
   }
 
   // Successful receipt
-  console.log(
-    `Successful ${req.method} at /badges/${badgeId} -- body: ${body}`
-  );
+  console.log(`${req.method} at /badges/${badgeId}`);
 
   // GET: Get badge by ID
   if (req.method === "GET") {
-    const badge = await findBadgebyId(badges, badgeId);
-    if (!badge) {
+    const result = await findBadgebyId(badges, badgeId);
+    if (result.length === 0) {
       return res
         .status(404)
         .json({ message: "Uh-oh, badge not found. Speak to Matt for help!" });
     } else {
-      return res.status(200).json(badge[0]);
+      return res.status(200).json(result[0]);
     }
   }
 
