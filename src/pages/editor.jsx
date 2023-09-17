@@ -48,18 +48,19 @@ export default function Page({ badgeId }) {
     setValue,
   } = useForm();
 
-  const onSubmit = async (data, event) => {
+  const onSubmit = (data, event) => {
     // Prevent browser refresh
     event.preventDefault();
 
-    await axios
+    // Update badge data
+    axios
       .put("/api/badges/" + badgeId, data)
       .then((res) => {
         if (res.status === 200) {
           setisSuccessful(true);
           router.reload();
         } else {
-          console.error(res);
+          throw new Error(res);
         }
       })
       .catch((err) => {
@@ -77,22 +78,9 @@ export default function Page({ badgeId }) {
         <title>Editor &ndash; badgeman</title>
       </Head>
       <main>
-        <Card
-          subhead={"Editing badge #" + badgeId}
-          variant="outlined"
-          actionsDivider
-          actionsAlignment="stretch"
-          actions={
-            <Button
-              onClick={() =>
-                axios.post("/api/logout").then(() => router.push("/"))
-              }
-              label="Edit a different badge"
-              variant="tonal"
-            />
-          }
-        >
+        <Card variant="outlined">
           {isSubmitting && <ProgressIndicator variant="linear" />}
+          <h2>Editing badge #{badgeId}</h2>
           <FormWrapper onSubmit={handleSubmit(onSubmit)}>
             <Controller
               name="name"
@@ -200,6 +188,15 @@ export default function Page({ badgeId }) {
               disabled={isSubmitting || !isDirty}
             />
           </FormWrapper>
+          <hr />
+          <Button
+            label="Edit a different badge"
+            onClick={() =>
+              axios.post("/api/logout").then(() => router.push("/"))
+            }
+            variant="tonal"
+            style={{ width: "100%" }}
+          />
         </Card>
       </main>
     </div>
