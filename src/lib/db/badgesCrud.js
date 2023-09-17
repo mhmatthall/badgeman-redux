@@ -62,3 +62,7 @@ export async function createBadgeByMac(collection, macAddress) {
     },
   });
 }
+
+export async function getAllBadges(collection) {
+  return collection.find({}).toArray();
+}
