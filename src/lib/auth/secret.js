@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash } from "crypto";
 
 export const verify = (id, secret) => {
   return generate(id) === secret;
