@@ -20,7 +20,8 @@ h1,
 h2,
 h3,
 p,
-li {
+li,
+hr {
   margin: 0;
   padding: 0;
 }
@@ -30,7 +31,8 @@ li {
   line-height: 150%;
 }
 
-input {
+input,
+hr {
   background: none;
   border: none;
   outline: none;
