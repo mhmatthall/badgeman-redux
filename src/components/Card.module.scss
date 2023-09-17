@@ -13,17 +13,20 @@
   gap: theme.$medium-margin;
   border-radius: theme.$corner-medium;
 
-  .headline {
+  .headline,
+  h1 {
     @include m3.headline-large;
     color: theme.$on-surface;
   }
 
-  .subhead {
+  .subhead,
+  h2 {
     @include m3.headline-small;
     color: theme.$on-surface-variant;
   }
 
-  .description {
+  .description,
+  p {
     @include m3.body-medium;
     color: theme.$on-surface-variant;
   }
