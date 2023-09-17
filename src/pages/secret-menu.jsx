@@ -1,11 +1,12 @@
+import BadgePreviewer from "@/components/BadgePreviewer";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import FormWrapper from "@/components/FormWrapper";
 import Layout from "@/components/Layout";
 import ProgressIndicator from "@/components/ProgressIndicator";
 import TextField from "@/components/TextField";
+import { generate } from "@/lib/auth/secret";
 import axios from "axios";
-import { createHash } from "crypto";
 import Head from "next/head";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -21,124 +22,103 @@ export default function Page() {
         <title>Admin &ndash; badgeman</title>
       </Head>
       <main>
-        <ViewSecret />
-        <br />
-        <ResetForm />
+        <Card variant="outlined">
+          <h1>Secret menu</h1>
+          <h2>Badge inspector</h2>
+          <BadgeInspector />
+          {/* <h2>Announcer</h2>
+          <p>Coming soon...</p> */}
+        </Card>
       </main>
     </div>
   );
 }
 
-function ViewSecret() {
-  const [secretCode, setsecretCode] = useState("");
+function BadgeInspector() {
+  const [statusMessage, setStatusMessage] = useState("");
+  const [badgeData, setBadgeData] = useState(null);
 
   const {
     control,
     formState: { isSubmitting, isDirty },
-    handleSubmit,
-    setValue,
-  } = useForm();
-
-  const onSubmit = async (data, event) => {
-    // Prevent browser refresh
-    event.preventDefault();
-
-    const secretCode = createHash("md5")
-      .update(data.badgeId)
-      .digest("hex")
-      .substring(1, 5);
-
-    setsecretCode(secretCode);
-  };
-
-  return (
-    <Card subhead="View secret code" variant="outlined">
-      {isSubmitting && <ProgressIndicator variant="linear" />}
-      <FormWrapper onSubmit={handleSubmit(onSubmit)}>
-        <Controller
-          name="badgeId"
-          control={control}
-          rules={{ required: true }}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              label="Badge ID"
-              placeholder="e.g. 123"
-              trailingIconGlyph="cancel"
-              onTrailingIconClick={() =>
-                setValue("badgeId", "", { shouldDirty: true })
-              }
-              fieldType="text"
-              htmlName="badgeId"
-              variant="outlined"
-              ref={null}
-            />
-          )}
-        />
-        {secretCode && (
-          <div>
-            <p>{secretCode}</p>
-          </div>
-        )}
-        <Button
-          label="Check secret"
-          type="submit"
-          variant="filled"
-          style={{ width: "100%" }}
-          disabled={isSubmitting || !isDirty}
-        />
-      </FormWrapper>
-    </Card>
-  );
-}
-
-function ResetForm() {
-  const [isSuccessful, setisSuccessful] = useState(false);
-
-  const {
-    control,
-    formState: { isSubmitting, isDirty },
+    getValues,
     handleSubmit,
     reset,
-    setValue,
   } = useForm();
 
-  const badgeResetter = async (data, event) => {
+  const getBadge = (data, event) => {
     // Prevent browser refresh
     event.preventDefault();
+
+    // Reset status message
+    setStatusMessage("");
+
+    // Fetch badge data
+    axios
+      .get("/api/badges/" + data.badgeId)
+      .then((res) => {
+        if (res.status === 200) {
+          setBadgeData(res.data);
+          setStatusMessage("");
+        } else {
+          setBadgeData(null);
+          reset();
+          throw new Error(res);
+        }
+      })
+      .catch((err) => {
+        setStatusMessage(err.message);
+      });
+  };
+
+  const resetBadge = async (data, event) => {
+    // Prevent browser refresh
+    event.preventDefault();
+
+    // Reset status message
+    setStatusMessage("");
 
     await axios
       .delete("/api/badges/" + data.badgeId)
       .then((res) => {
         if (res.status === 200) {
-          setisSuccessful(true);
+          setStatusMessage(
+            `Badge ${getValues("badgeId")} was reset successfully`
+          );
+          setBadgeData(null);
           reset();
         } else {
-          console.error(res);
+          setBadgeData(null);
+          reset();
+          throw new Error(res);
         }
       })
       .catch((err) => {
-        console.error(err);
+        setStatusMessage(err.message);
       });
   };
 
   return (
-    <Card subhead="Reset a badge" variant="outlined">
+    <>
+      {statusMessage && <p>{statusMessage}</p>}
       {isSubmitting && <ProgressIndicator variant="linear" />}
-      <FormWrapper onSubmit={handleSubmit(badgeResetter)}>
+      <FormWrapper onSubmit={handleSubmit(getBadge)}>
         <Controller
           name="badgeId"
           control={control}
           rules={{ required: true }}
+          defaultValue=""
           render={({ field }) => (
             <TextField
               {...field}
               label="Badge ID"
               placeholder="e.g. 123"
               trailingIconGlyph="cancel"
-              onTrailingIconClick={() =>
-                setValue("badgeId", "", { shouldDirty: true })
-              }
+              onTrailingIconClick={() => {
+                setBadgeData(null);
+                setStatusMessage("");
+                reset();
+              }}
               fieldType="text"
               htmlName="badgeId"
               variant="outlined"
@@ -146,19 +126,65 @@ function ResetForm() {
             />
           )}
         />
-        {isSuccessful && (
-          <div>
-            <p>Successfully deleted badge</p>
-          </div>
-        )}
         <Button
-          label="Reset badge"
+          label="View badge"
           type="submit"
           variant="filled"
-          style={{ width: "100%" }}
           disabled={isSubmitting || !isDirty}
         />
       </FormWrapper>
-    </Card>
+      {badgeData && !isSubmitting && (
+        <Card
+          variant="filled"
+          style={{ alignSelf: "center" }}
+          actions={
+            <Button
+              label="Reset badge"
+              onClick={handleSubmit(resetBadge)}
+              variant="outlined"
+            />
+          }
+        >
+          <h2>Info</h2>
+          <p>
+            <b>Badge ID:</b> <code>{getValues("badgeId")}</code>
+          </p>
+          <p>
+            <b>Secret code:</b> <code>{generate(getValues("badgeId"))}</code>
+          </p>
+          <p>
+            <b>Updated:</b> {new Date(badgeData.lastUpdate).toLocaleString()}
+          </p>
+          <p>
+            <b>Device MAC:</b> <code>{badgeData.macAddress}</code>
+          </p>
+          <hr />
+          <h2>User data</h2>
+          <BadgePreviewer badgeData={badgeData} />
+          <p>
+            <b>Name:</b>
+            <br />
+            <code>{badgeData.userData.name}</code>
+          </p>
+          <p>
+            <b>Pronouns:</b>
+            <br />
+            <code>{badgeData.userData.pronouns}</code>
+          </p>
+          <p>
+            <b>Affiliation:</b>
+            <br />
+            <code>{badgeData.userData.affiliation}</code>
+          </p>
+          <p>
+            <b>Message:</b>
+            <br />
+            <code>{badgeData.userData.message}</code>
+          </p>
+          <hr />
+          <h2>Actions</h2>
+        </Card>
+      )}
+    </>
   );
 }
