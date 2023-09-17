@@ -1,11 +1,59 @@
 import { generate } from "../auth/secret";
-
 const { createCanvas, loadImage } = require("canvas");
 const qr = require("qrcode");
 
-const WLAN_SSID = "Badge City";
-const HOST_IP_ADDRESS = "192.168.69.1";
-const HOST_PORT = "3000";
+const HOST_ROOT = `http://${process.env.NEXT_PUBLIC_HOST_IP_ADDRESS}:${process.env.NEXT_PUBLIC_HOST_PORT}`;
+
+export async function generateBadgePreview(badgeData) {
+  // Create base canvas and context
+  const cv = createCanvas(296, 128);
+  const ctx = cv.getContext("2d");
+
+  // Grab base badge template image
+  const baseImg = await loadImage(HOST_ROOT + "/img/badge_template_full.png", {
+    crossOrigin: "anonymous",
+  });
+
+  // ADD BADGE CONTENT
+  // Draw base image on canvas
+  ctx.drawImage(baseImg, 0, 0, 296, 128);
+
+  // Bigger name font size
+  ctx.font = `36px "Inter"`;
+
+  // Check width to make sure it hasn't spilt
+  if (ctx.measureText(badgeData.name).width <= 270) {
+    // Name fits on one line at 36px, draw
+    ctx.fillText(badgeData.name, 22, 36);
+  } else {
+    // Smaller name font size
+    ctx.font = `24px "Inter"`;
+
+    // Check width to make sure it hasn't spilt onto profile image
+    if (ctx.measureText(badgeData.name).width <= 270) {
+      // Name fits on one line at 24px, draw
+      ctx.fillText(badgeData.name, 22, 28);
+    } else {
+      // If name is still too long, split over two lines at first whitespace
+      const nameArr = badgeData.name.split(/ (.*)/s);
+      ctx.fillText(nameArr[0], 22, 28);
+      ctx.fillText(nameArr[1], 22, 54);
+    }
+  }
+
+  ctx.font = `bold 18px "Inter"`;
+  ctx.fillText(badgeData.pronouns, 22, 76);
+
+  ctx.font = `18px "Inter"`;
+  ctx.fillText(badgeData.affiliation, 22, 96);
+
+  ctx.font = `bold 18px "Inter"`;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "center";
+  ctx.fillText(badgeData.message, 148, 122);
+
+  return cv.toDataURL("image/png");
+}
 
 export async function generateBlankBadge(badgeId) {
   // Create base canvas and context
@@ -16,12 +64,10 @@ export async function generateBlankBadge(badgeId) {
   const secret = generate(badgeId.toString());
 
   // Grab base blank badge template image
-  const baseImg = await loadImage(
-    `http://${HOST_IP_ADDRESS}:${HOST_PORT}/img/badge_template_blank.png`
-  );
+  const baseImg = await loadImage(HOST_ROOT + "/img/badge_template_blank.png");
 
   // Generate QR code dataUrl (default size is 132x132px -- 100x100px QR with 16px border)
-  const qrCode = await qr.toDataURL(`http://${HOST_IP_ADDRESS}:${HOST_PORT}`);
+  const qrCode = await qr.toDataURL(HOST_ROOT);
 
   // Load as image
   const qrCodeImg = await loadImage(qrCode);
@@ -39,14 +85,14 @@ export async function generateBlankBadge(badgeId) {
 
   // I'm using few variables here to reduce the line count of this text draw
   // Insert SSID text
-  if (ctx.measureText(WLAN_SSID).width > 55) {
+  if (ctx.measureText(process.env.NEXT_PUBLIC_WLAN_SSID).width > 55) {
     // If name is too long, split over two lines at first whitespace
-    const ssidText = WLAN_SSID.split(/ (.*)/s);
+    const ssidText = process.env.NEXT_PUBLIC_WLAN_SSID.split(/ (.*)/s);
     ctx.fillText(ssidText[0], 51, 94);
     ctx.fillText(ssidText[1], 51, 112);
   } else {
     // Name fits on one line, don't change
-    ctx.fillText(WLAN_SSID, 51, 94);
+    ctx.fillText(process.env.NEXT_PUBLIC_WLAN_SSID, 51, 94);
   }
 
   // Insert badge secret text
@@ -69,9 +115,7 @@ export async function generateCompleteBadge(badgeData) {
   const ctx = cv.getContext("2d");
 
   // Grab base badge template image
-  const baseImg = await loadImage(
-    `http://${HOST_IP_ADDRESS}:${HOST_PORT}/img/badge_template_full.png`
-  );
+  const baseImg = await loadImage(HOST_ROOT + "/img/badge_template_full.png");
 
   // ADD BADGE CONTENT
   // Draw base image on canvas
